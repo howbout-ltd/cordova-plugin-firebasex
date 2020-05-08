@@ -137,7 +137,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
                 if(data.containsKey("notification_title")) title = data.get("notification_title");
                 if(data.containsKey("notification_body")) body = data.get("notification_body");
-                if(data.containsKey("notification_tag")) body = data.get("notification_tag");
+                if(data.containsKey("notification_tag")) tag = data.get("notification_tag");
                 if(data.containsKey("notification_android_channel_id")) channelId = data.get("notification_android_channel_id");
                 if(data.containsKey("notification_android_id")) id = data.get("notification_android_id");
                 if(data.containsKey("notification_android_sound")) sound = data.get("notification_android_sound");
@@ -234,13 +234,15 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             } else {
 
                 // Process conversation messages
-                NotificationCompat.MessagingStyle notificationMessage = new NotificationCompat.MessagingStyle("Reply");
+                NotificationCompat.MessagingStyle notificationMessage = new NotificationCompat.MessagingStyle("You");
                 for (int i = 0; i < conversationMessages.length(); i++) {
                     try {
                         JSONObject messageInfo = conversationMessages.getJSONObject(i);
                         String messageContent = messageInfo.getString("message");
                         Long messageTime = messageInfo.getLong("timestamp");
-                        String messageSender = messageInfo.getString("sender");
+                        Person messageSender = getMessageSender(
+                            messageInfo.getJSONObject("sender").getString("id"),
+                            messageInfo.getJSONObject("sender").getString("name"));
                         notificationMessage.addMessage(messageContent, messageTime, messageSender);
                     } catch (JSONException e) {}
                 }
@@ -380,5 +382,36 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         if(v != null && !b.containsKey(k)){
             b.putString(k, v);
         }
+    }
+
+    private Person getMessageSender(String id, String name) {
+        // Try and get an icon for the sender from the profile_pictures directory in cache
+        IconCompat profilePictureIcon = null;
+        Bitmap imageBitmap = BitmapFactory.decodeFile(getApplicationContext().getCacheDir().getPath().concat("/profile_pictures/").concat(id).concat(".jpg"));
+        if (imageBitmap != null) {
+            // Make the profile picture a circle
+            profilePictureIcon = IconCompat.createWithBitmap(makeBitmapRound(imageBitmap));
+        }
+
+        return new Person.Builder()
+            .setName(name)
+            .setKey(id)
+            .setIcon(profilePictureIcon)
+            .build();
+    }
+
+    private static Bitmap makeBitmapRound(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2, bitmap.getWidth() / 2, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        return output;
     }
 }
