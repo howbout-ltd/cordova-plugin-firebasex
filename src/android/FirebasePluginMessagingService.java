@@ -5,12 +5,21 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
+import androidx.core.graphics.drawable.IconCompat;
+
 import android.util.Log;
 import android.app.Notification;
 import android.text.TextUtils;
@@ -20,6 +29,10 @@ import android.graphics.Color;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.Random;
@@ -89,6 +102,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String messageType;
             String title = null;
             String body = null;
+            String tag = null;
             String id = null;
             String sound = null;
             String vibrate = null;
@@ -102,6 +116,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             Map<String, String> data = remoteMessage.getData();
 
+            String conversationTitle = null;
+            JSONArray conversationMessages = null;
+
             if (remoteMessage.getNotification() != null) {
                 // Notification message payload
                 Log.i(TAG, "Received message: notification");
@@ -110,6 +127,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 RemoteMessage.Notification notification = remoteMessage.getNotification();
                 title = notification.getTitle();
                 body = notification.getBody();
+                tag = notification.getTag();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     channelId = notification.getChannelId();
                 }
@@ -128,6 +146,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
                 if(data.containsKey("notification_title")) title = data.get("notification_title");
                 if(data.containsKey("notification_body")) body = data.get("notification_body");
+                if(data.containsKey("notification_tag")) tag = data.get("notification_tag");
                 if(data.containsKey("notification_android_channel_id")) channelId = data.get("notification_android_channel_id");
                 if(data.containsKey("notification_android_id")) id = data.get("notification_android_id");
                 if(data.containsKey("notification_android_sound")) sound = data.get("notification_android_sound");
@@ -137,6 +156,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_icon")) icon = data.get("notification_android_icon");
                 if(data.containsKey("notification_android_visibility")) visibility = data.get("notification_android_visibility");
                 if(data.containsKey("notification_android_priority")) priority = data.get("notification_android_priority");
+                if(data.containsKey("notification_conversation_title")) conversationTitle = data.get("notification_conversation_title");
+                try {
+                    if (data.containsKey("notification_conversation_messages")) conversationMessages = new JSONArray(data.get("notification_conversation_messages"));
+                } catch (JSONException e) {}
+
             }
 
             if (TextUtils.isEmpty(id)) {
@@ -149,6 +173,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Id: " + id);
             Log.d(TAG, "Title: " + title);
             Log.d(TAG, "Body: " + body);
+            Log.d(TAG, "Tag: " + tag);
             Log.d(TAG, "Sound: " + sound);
             Log.d(TAG, "Vibrate: " + vibrate);
             Log.d(TAG, "Light: " + light);
@@ -161,15 +186,15 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility);
+                sendMessage(remoteMessage, data, messageType, id, title, body, tag, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, conversationTitle, conversationMessages);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility) {
-        Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, String tag, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String conversationTitle, JSONArray conversationMessages) {
+        Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; tag="+tag+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
             bundle.putString(key, data.get(key));
@@ -178,6 +203,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("id", id, bundle);
         this.putKVInBundle("title", title, bundle);
         this.putKVInBundle("body", body, bundle);
+        this.putKVInBundle("tag", tag, bundle);
         this.putKVInBundle("sound", sound, bundle);
         this.putKVInBundle("vibrate", vibrate, bundle);
         this.putKVInBundle("light", light, bundle);
@@ -207,11 +233,32 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId);
             notificationBuilder
-                    .setContentTitle(title)
-                    .setContentText(body)
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                    .setAutoCancel(true)
-                    .setContentIntent(pendingIntent);
+                .setContentTitle(title)
+                .setContentText(body)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+
+            if (conversationMessages == null) {
+                notificationBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(body));
+            } else {
+
+                // Process conversation messages
+                NotificationCompat.MessagingStyle notificationMessage = new NotificationCompat.MessagingStyle("You");
+                for (int i = 0; i < conversationMessages.length(); i++) {
+                    try {
+                        JSONObject messageInfo = conversationMessages.getJSONObject(i);
+                        String messageContent = messageInfo.getString("message");
+                        Long messageTime = messageInfo.getLong("timestamp");
+                        Person messageSender = getMessageSender(
+                            messageInfo.getJSONObject("sender").getString("id"),
+                            messageInfo.getJSONObject("sender").getString("name"));
+                        notificationMessage.addMessage(messageContent, messageTime, messageSender);
+                    } catch (JSONException e) {}
+                }
+                if (conversationTitle != null) notificationMessage.setConversationTitle(conversationTitle);
+                notificationBuilder.setStyle(notificationMessage);
+
+            }
 
             // On Android O+ the sound/lights/vibration are determined by the channel ID
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
@@ -334,7 +381,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             // Display notification
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             Log.d(TAG, "show notification: "+notification.toString());
-            notificationManager.notify(id.hashCode(), notification);
+            notificationManager.notify(tag, id.hashCode(), notification);
         }
         // Send to plugin
         FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
@@ -345,4 +392,36 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             b.putString(k, v);
         }
     }
+
+    private Person getMessageSender(String id, String name) {
+        // Try and get an icon for the sender from the profile_pictures directory in cache
+        IconCompat profilePictureIcon = null;
+        Bitmap imageBitmap = BitmapFactory.decodeFile(getApplicationContext().getCacheDir().getPath().concat("/profile_pictures/").concat(id).concat(".jpg"));
+        if (imageBitmap != null) {
+            // Make the profile picture a circle
+            profilePictureIcon = IconCompat.createWithBitmap(makeBitmapRound(imageBitmap));
+        }
+
+        return new Person.Builder()
+            .setName(name)
+            .setKey(id)
+            .setIcon(profilePictureIcon)
+            .build();
+    }
+
+    private static Bitmap makeBitmapRound(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2, bitmap.getWidth() / 2, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        return output;
+    }
+
 }
