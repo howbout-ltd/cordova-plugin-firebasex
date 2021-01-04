@@ -97,6 +97,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.FirebaseTooManyRequestsException;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
+import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -943,7 +944,7 @@ public class FirebasePlugin extends CordovaPlugin {
             }
         });
     }
-	
+
 	private void setConfigSettings(final CallbackContext callbackContext, final JSONArray args) throws JSONException {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
@@ -1447,10 +1448,10 @@ public class FirebasePlugin extends CordovaPlugin {
                     }
 
                     PhoneAuthOptions options = PhoneAuthOptions.newBuilder(FirebaseAuth.getInstance())
-                        .setPhoneNumber(number)                         // Phone number to verify
-                        .setTimeout(timeOutDuration, TimeUnit.SECONDS)  // Timeout and unit
-                        .setActivity(cordovaActivity)                   // Activity (for callback binding)
-                        .setCallbacks(mCallbacks)                       // OnVerificationStateChangedCallbacks
+                        .setPhoneNumber(number)                                       // Phone number to verify
+                        .setTimeout(Long.valueOf(timeOutDuration), TimeUnit.SECONDS)  // Timeout and unit
+                        .setActivity(cordovaActivity)                                 // Activity (for callback binding)
+                        .setCallbacks(mCallbacks)                                     // OnVerificationStateChangedCallbacks
                         .build();
                     PhoneAuthProvider.verifyPhoneNumber(options);
 
@@ -1481,7 +1482,7 @@ public class FirebasePlugin extends CordovaPlugin {
             }
         });
     }
-    
+
     public void createUserWithEmailAndPassword(final CallbackContext callbackContext, final JSONArray args){
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
