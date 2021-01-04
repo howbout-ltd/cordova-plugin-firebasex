@@ -1446,11 +1446,14 @@ public class FirebasePlugin extends CordovaPlugin {
                         FirebaseAuth.getInstance().getFirebaseAuthSettings().setAutoRetrievedSmsCodeForPhoneNumber(number, smsCode);
                     }
 
-                    PhoneAuthProvider.getInstance().verifyPhoneNumber(number, // Phone number to verify
-                            timeOutDuration, // Timeout duration
-                            TimeUnit.SECONDS, // Unit of timeout
-                            cordovaActivity, // Activity (for callback binding)
-                            mCallbacks); // OnVerificationStateChangedCallbacks
+                    PhoneAuthOptions options = PhoneAuthOptions.newBuilder(FirebaseAuth.getInstance())
+                        .setPhoneNumber(number)                         // Phone number to verify
+                        .setTimeout(timeOutDuration, TimeUnit.SECONDS)  // Timeout and unit
+                        .setActivity(cordovaActivity)                   // Activity (for callback binding)
+                        .setCallbacks(mCallbacks)                       // OnVerificationStateChangedCallbacks
+                        .build();
+                    PhoneAuthProvider.verifyPhoneNumber(options);
+
                 } catch (Exception e) {
                     handleExceptionWithContext(e, callbackContext);
                 }
