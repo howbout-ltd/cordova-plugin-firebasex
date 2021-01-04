@@ -97,6 +97,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.FirebaseTooManyRequestsException;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
+import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
