@@ -135,7 +135,7 @@ static NSMutableDictionary* traces;
 
         // Initialize categories
         [[UNUserNotificationCenter currentNotificationCenter] setNotificationCategories:categories];
-        
+
         // Initialize installation ID change listner
         __weak __auto_type weakSelf = self;
         self.installationIDObserver = [[NSNotificationCenter defaultCenter]
@@ -306,7 +306,7 @@ static NSMutableDictionary* traces;
                             authOptions = authOptions|UNAuthorizationOptionProvidesAppNotificationSettings;
                         }
                     }
-                
+
                     [[UNUserNotificationCenter currentNotificationCenter]
                      requestAuthorizationWithOptions:authOptions
                      completionHandler:^(BOOL granted, NSError * _Nullable error) {
@@ -524,6 +524,49 @@ static NSMutableDictionary* traces;
 
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }@catch (NSException *exception) {
+            [self handlePluginExceptionWithContext:exception :command];
+        }
+    }];
+}
+
+- (void)clearNotification:(CDVInvokedUrlCommand *)command {
+    [self runOnMainThread:^{
+        @try {
+            NSString* id = [command.arguments objectAtIndex:0];
+
+            [[UNUserNotificationCenter currentNotificationCenter] removeDeliveredNotificationsWithIdentifiers:@[id]];
+
+            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }@catch (NSException *exception) {
+            [self handlePluginExceptionWithContext:exception :command];
+        }
+    }];
+}
+
+- (void)getAllNotifications:(CDVInvokedUrlCommand *)command {
+    [self runOnMainThread:^{
+        @try {
+            [[UNUserNotificationCenter currentNotificationCenter]
+             getDeliveredNotificationsWithCompletionHandler:^(NSArray<UNNotification *> * _Nonnull notifications) {
+                @try {
+
+                    NSMutableArray* allNotifications = [[NSMutableArray alloc] init];
+                    for (UNNotification* notification in notifications) {
+                        NSMutableDictionary* result = [[NSMutableDictionary alloc] init];
+                        [result setObject:notification.request.identifier forKey:@"id"];
+                        [result setObject:notification.request.content.threadIdentifier forKey:@"thread"];
+                        [allNotifications addObject:result];
+                    }
+
+                    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:allNotifications];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
+                } @catch (NSException *exception) {
+                    [self handlePluginExceptionWithContext:exception :command];
+                }
+            }];
         }@catch (NSException *exception) {
             [self handlePluginExceptionWithContext:exception :command];
         }
@@ -1468,7 +1511,7 @@ static NSMutableDictionary* traces;
     [self.commandDelegate runInBackground:^{
         @try {
             NSString* traceName = [command.arguments objectAtIndex:0];
-            
+
             @synchronized (traces) {
                 FIRTrace* trace = [traces objectForKey:traceName];
 
@@ -1477,7 +1520,7 @@ static NSMutableDictionary* traces;
                     [traces setObject:trace forKey:traceName ];
                 }
             }
-            
+
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         }@catch (NSException *exception) {
@@ -1981,7 +2024,7 @@ static NSMutableDictionary* traces;
 
 - (void) getInstallationToken:(CDVInvokedUrlCommand*)command {
     [self.commandDelegate runInBackground:^{
-        @try {            
+        @try {
             [[FIRInstallations installations] authTokenForcingRefresh:true
                                                            completion:^(FIRInstallationsAuthTokenResult *result, NSError *error) {
               if (error != nil) {

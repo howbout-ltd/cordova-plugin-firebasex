@@ -204,6 +204,24 @@ exports.clearAllNotifications = function (success, error) {
   exec(success, error, "FirebasePlugin", "clearAllNotifications", []);
 };
 
+exports.clearNotification = function (id, tag, success, error) {
+    var args = [id];
+    // "tag" is an optional arg
+    if (tag) {
+        if (typeof tag === 'function') {
+            error = success;
+            success = tag;
+        } else {
+            args.push(tag);
+        }
+    }
+    exec(success, error, "FirebasePlugin", "clearNotification", args);
+};
+
+exports.getAllNotifications = function (success, error) {
+    exec(success, error, "FirebasePlugin", "getAllNotifications", []);
+};
+
 
 // Crashlytics
 exports.setCrashlyticsCollectionEnabled = function (enabled, success, error) {
