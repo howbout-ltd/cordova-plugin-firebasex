@@ -53,6 +53,8 @@
 - (void)sendToken:(NSString*)token;
 - (void)sendApnsToken:(NSString*)token;
 - (void)clearAllNotifications:(CDVInvokedUrlCommand *)command;
+- (void)clearNotification:(CDVInvokedUrlCommand *)command;
+- (void)getAllNotifications:(CDVInvokedUrlCommand *)command;
 
 // Analytics
 - (void)setAnalyticsCollectionEnabled:(CDVInvokedUrlCommand*)command;

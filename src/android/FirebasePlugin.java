@@ -183,7 +183,7 @@ public class FirebasePlugin extends CordovaPlugin {
                     authStateListener = new AuthStateListener();
                     FirebaseAuth.getInstance().addAuthStateListener(authStateListener);
 
-                    firestore = FirebaseFirestore.getInstance();                  
+                    firestore = FirebaseFirestore.getInstance();
                     functions = FirebaseFunctions.getInstance();
 
                     gson = new GsonBuilder()
@@ -1907,6 +1907,50 @@ public class FirebasePlugin extends CordovaPlugin {
                     callbackContext.success();
                 } catch (Exception e) {
                     handleExceptionWithContext(e, callbackContext);
+                }
+            }
+        });
+    }
+
+    public void clearNotification(final CallbackContext callbackContext, final JSONArray options) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+                    String id = options.getString(0);
+                    if (options.isNull(1)) {
+                        nm.cancel(id.hashCode());
+                    } else {
+                        String tag = options.getString(1);
+                        nm.cancel(tag, id.hashCode());
+                    }
+                    callbackContext.success();
+                } catch (Exception e) {
+                    handleExceptionWithContext(e, callbackContext);
+                }
+            }
+        });
+    }
+
+    public void getAllNotifications(final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                // only call on Android M and above
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+                        StatusBarNotification[] notifications = nm.getActiveNotifications();
+                        JSONArray allNotifications = new JSONArray();
+                        for (StatusBarNotification notification : notifications) {
+                            JSONObject notificationInfo = new JSONObject();
+                            notificationInfo.put("id", notification.getId());
+                            notificationInfo.put("tag", notification.getTag());
+                            allNotifications.put(notificationInfo);
+                        }
+                        callbackContext.success(allNotifications);
+                    } catch (Exception e) {
+                        handleExceptionWithContext(e, callbackContext);
+                    }
                 }
             }
         });
