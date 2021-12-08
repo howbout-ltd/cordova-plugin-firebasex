@@ -22,6 +22,8 @@ import androidx.core.app.NotificationManagerCompat;
 import android.util.Base64;
 import android.util.Log;
 
+import android.service.notification.StatusBarNotification;
+
 import com.google.firebase.auth.EmailAuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
