@@ -163,14 +163,22 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             }
 
+            // Process the provided ID into a numeric ID for the notification
+            //  - If no ID is provided, a random integer is selected
+            //  - If a numeric ID is provided, it is used directly
+            //  - If a non-numeric ID is provided, its hashCode is used
+            int numId;
             if (TextUtils.isEmpty(id)) {
                 Random rand = new Random();
-                int n = rand.nextInt(50) + 1;
-                id = Integer.toString(n);
+                numId = rand.nextInt(500) + 1;
+            } else if (TextUtils.isDigitsOnly(id)) {
+                numId = Integer.parseInt(id);
+            } else {
+                numId = id.hashCode();
             }
 
             Log.d(TAG, "From: " + remoteMessage.getFrom());
-            Log.d(TAG, "Id: " + id);
+            Log.d(TAG, "Id: " + numId);
             Log.d(TAG, "Title: " + title);
             Log.d(TAG, "Body: " + body);
             Log.d(TAG, "Tag: " + tag);
@@ -186,21 +194,21 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                sendMessage(remoteMessage, data, messageType, id, title, body, tag, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, conversationTitle, conversationMessages);
+                sendMessage(remoteMessage, data, messageType, numId, title, body, tag, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, conversationTitle, conversationMessages);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, String tag, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String conversationTitle, JSONArray conversationMessages) {
-        Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; tag="+tag+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, int id, String title, String body, String tag, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String conversationTitle, JSONArray conversationMessages) {
+        Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+Integer.toString(id)+"; title="+title+"; body="+body+"; tag="+tag+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
             bundle.putString(key, data.get(key));
         }
         bundle.putString("messageType", messageType);
-        this.putKVInBundle("id", id, bundle);
+        this.putKVInBundle("id", Integer.toString(id), bundle);
         this.putKVInBundle("title", title, bundle);
         this.putKVInBundle("body", body, bundle);
         this.putKVInBundle("tag", tag, bundle);
@@ -221,7 +229,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         if (showNotification) {
             Intent intent = new Intent(this, OnNotificationOpenReceiver.class);
             intent.putExtras(bundle);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
             // Channel
             if(channelId == null || !FirebasePlugin.channelExists(channelId)){
@@ -381,7 +389,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             // Display notification
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             Log.d(TAG, "show notification: "+notification.toString());
-            notificationManager.notify(tag, id.hashCode(), notification);
+            notificationManager.notify(tag, id, notification);
         }
         // Send to plugin
         FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
