@@ -349,6 +349,7 @@ static NSMutableDictionary* traces;
 - (void)setBadgeNumber:(CDVInvokedUrlCommand *)command {
     @try {
         int number = [[command.arguments objectAtIndex:0] intValue];
+        if (number == 0) { number = -1; }
         [self runOnMainThread:^{
             @try {
                 [[UIApplication sharedApplication] setApplicationIconBadgeNumber:number];
