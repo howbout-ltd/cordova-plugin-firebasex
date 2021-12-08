@@ -1918,12 +1918,12 @@ public class FirebasePlugin extends CordovaPlugin {
             public void run() {
                 try {
                     NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
-                    String id = options.getString(0);
+                    int id = options.getInt(0);
                     if (options.isNull(1)) {
-                        nm.cancel(id.hashCode());
+                        nm.cancel(id);
                     } else {
                         String tag = options.getString(1);
-                        nm.cancel(tag, id.hashCode());
+                        nm.cancel(tag, id);
                     }
                     callbackContext.success();
                 } catch (Exception e) {
