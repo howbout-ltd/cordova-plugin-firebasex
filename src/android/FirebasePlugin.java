@@ -24,19 +24,15 @@ import android.util.Log;
 
 import android.service.notification.StatusBarNotification;
 
-import com.google.firebase.auth.EmailAuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.CommonStatusCodes;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -51,7 +47,6 @@ import com.google.firebase.auth.GetTokenResult;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.OAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -1983,7 +1978,7 @@ public class FirebasePlugin extends CordovaPlugin {
             Log.i(TAG, "Creating channel id="+id);
 
             if(channelExists(id)){
-                deleteChannel(id);
+                return getChannelById(id);
             }
 
             NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -2159,18 +2154,21 @@ public class FirebasePlugin extends CordovaPlugin {
     }
 
     public static boolean channelExists(String channelId){
-        boolean exists = false;
+        return (getChannelById(channelId) != null);
+    }
+
+    public static NotificationChannel getChannelById(String channelId){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             List<NotificationChannel> notificationChannels = FirebasePlugin.listChannels();
             if(notificationChannels != null){
                 for (NotificationChannel notificationChannel : notificationChannels) {
                     if(notificationChannel.getId().equals(channelId)){
-                        exists = true;
+                        return notificationChannel;
                     }
                 }
             }
         }
-        return exists;
+        return null;
     }
 
     //
