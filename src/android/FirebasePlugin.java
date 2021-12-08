@@ -345,6 +345,10 @@ public class FirebasePlugin extends CordovaPlugin {
                 this.isCrashlyticsCollectionEnabled(callbackContext);
             } else if (action.equals("clearAllNotifications")) {
                 this.clearAllNotifications(callbackContext);
+            } else if (action.equals("clearNotification")) {
+                this.clearNotification(callbackContext, args);
+            } else if (action.equals("getAllNotifications")) {
+                this.getAllNotifications(callbackContext);
             } else if (action.equals("setCrashlyticsCustomKey")) {
                 this.setCrashlyticsCustomKey(callbackContext, args);
             } else if (action.equals("logMessage")) {
