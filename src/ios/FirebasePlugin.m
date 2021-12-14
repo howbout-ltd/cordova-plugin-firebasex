@@ -487,10 +487,10 @@ static NSMutableDictionary* traces;
         }
         
         WKWebView* webView = self.webView;
-        BOOL title_is_nil = (webView.title == nil);
-        BOOL location_is_blank = [[webView.URL absoluteString] isEqualToString:@"about:blank"];
+        BOOL blankTitle = (webView.title == nil);
+        BOOL blankURL = [[webView.URL absoluteString] isEqualToString:@"about:blank"];
         
-        if (self.notificationCallbackId == nil || webView.loading || title_is_nil || location_is_blank) {
+        if (self.notificationCallbackId == nil || webView.loading || blankTitle || blankURL) {
             if (!self.notificationStack) {
                 self.notificationStack = [[NSMutableArray alloc] init];
             }
