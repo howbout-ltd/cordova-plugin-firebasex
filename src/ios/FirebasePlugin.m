@@ -14,6 +14,8 @@
 @import CommonCrypto;
 @import AuthenticationServices;
 
+@import WebKit;
+
 @implementation FirebasePlugin
 
 @synthesize openSettingsCallbackId;
@@ -429,7 +431,8 @@ static NSMutableDictionary* traces;
         self.notificationCallbackId = command.callbackId;
 
         if (self.notificationStack != nil && [self.notificationStack count]) {
-            for (NSDictionary *userInfo in self.notificationStack) {
+            NSMutableArray *stackCopy = [self.notificationStack copy];
+            for (NSDictionary *userInfo in stackCopy) {
                 [self sendNotification:userInfo];
             }
             [self.notificationStack removeAllObjects];
@@ -478,9 +481,16 @@ static NSMutableDictionary* traces;
             [self _logMessage:@"Message handled by custom receiver"];
             return;
         }
+        
         if (self.notificationCallbackId != nil) {
             [self sendPluginDictionaryResultAndKeepCallback:userInfo command:self.commandDelegate callbackId:self.notificationCallbackId];
-        } else {
+        }
+        
+        WKWebView* webView = self.webView;
+        BOOL blankTitle = (webView.title == nil);
+        BOOL blankURL = [[webView.URL absoluteString] isEqualToString:@"about:blank"];
+        
+        if (self.notificationCallbackId == nil || webView.loading || blankTitle || blankURL) {
             if (!self.notificationStack) {
                 self.notificationStack = [[NSMutableArray alloc] init];
             }
@@ -492,6 +502,7 @@ static NSMutableDictionary* traces;
                 [self.notificationStack removeLastObject];
             }
         }
+        
     }@catch (NSException *exception) {
         [self handlePluginExceptionWithContext:exception :self.commandDelegate];
     }
