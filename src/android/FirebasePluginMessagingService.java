@@ -256,11 +256,12 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     try {
                         JSONObject messageInfo = conversationMessages.getJSONObject(i);
                         String messageContent = messageInfo.getString("message");
+                        String notificationBody = messageInfo.optString("body", messageContent);
                         Long messageTime = messageInfo.getLong("timestamp");
                         Person messageSender = getMessageSender(
                             messageInfo.getJSONObject("sender").getString("id"),
                             messageInfo.getJSONObject("sender").getString("name"));
-                        notificationMessage.addMessage(messageContent, messageTime, messageSender);
+                        notificationMessage.addMessage(notificationBody, messageTime, messageSender);
                     } catch (JSONException e) {}
                 }
                 if (conversationTitle != null) notificationMessage.setConversationTitle(conversationTitle);
